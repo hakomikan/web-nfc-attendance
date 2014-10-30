@@ -1,4 +1,4 @@
 .PHONY: reload
 
 reload: $(ls -R, webapp/*)
-    chrome-reload Attendance
+    sh chrome-reload Attendance
