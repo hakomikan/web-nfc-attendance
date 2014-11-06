@@ -29,9 +29,12 @@
 
       <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
         <ul class="nav navbar-nav">
-          <li><a>Attendance</a></li>
-          <li><a>Member</a></li>
-          <li><a>Event</a></li>
+          <li><a>Attendance</a>
+          </li>
+          <li><a>Member</a>
+          </li>
+          <li><a>Event</a>
+          </li>
         </ul>
       </div>
     </div>
@@ -58,39 +61,42 @@
   </div>
 
 
-<!-- Modal -->
-<script type="text/html" id="EditMember">
-  <div class="modal f\ade" tabindex="-1" role="dialog" aria-labelledby="EditMember" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-          <h4 class="modal-title" id="EditMemberTitle">Member Edit</h4>
-        </div>
-        <div class="modal-body">
-          <form class="form-horizontal" action="#" data-bind="submit: add">
-            <div class="form-group">
-              <label class="col-sm-2 control-label">Name:</label>
-              <div class="col-sm-10 controls">
-                <input data-bind="value: name">
+  <!-- Modal -->
+  <script type="text/html" id="EditMember">
+    <div class="modal f\ade" tabindex="-1" role="dialog" aria-labelledby="EditMember" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              <span aria-hidden="true">&times;</span>
+              <span class="sr-only">Close</span>
+            </button>
+            <h4 class="modal-title" id="EditMemberTitle">Member Edit</h4>
+          </div>
+          <div class="modal-body">
+            <form class="form-horizontal" action="#" data-bind="submit: add">
+              <div class="form-group">
+                <label class="col-sm-2 control-label">Name:</label>
+                <div class="col-sm-10 controls">
+                  <input data-bind="value: name">
+                </div>
               </div>
-            </div>
-            <div class="form-group">
-              <label class="col-sm-2 control-label">NfcId:</label>
-              <div class="col-sm-10 controls">
-                <input data-bind="value: id">
+              <div class="form-group">
+                <label class="col-sm-2 control-label">NfcId:</label>
+                <div class="col-sm-10 controls">
+                  <input data-bind="value: id">
+                </div>
               </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal" data-bind="click: cancel">Close</button>
-          <button type="button" class="btn btn-primary" data-bind="click: add">Save</button>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" data-bind="click: cancel">Close</button>
+            <button type="button" class="btn btn-primary" data-bind="click: add">Save</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</script>
+  </script>
 
   <script type='text/javascript' src="./static/js/jquery-2.1.0.js"></script>
   <script type='text/javascript' src="./static/js/bootstrap.min.js"></script>
@@ -102,43 +108,37 @@
 
   <script type="text/javascript">
   $(function() {
-    MemberViewModel = function(){
+    MemberViewModel = function() {
       var self = this;
       this.name = ko.observable("No Name");
       this.id = ko.observable("No NfcId");
-      this.add = function(){
+      this.add = function() {
         self.modal.close({
           name: self.name(),
           id: self.id()
         });
       };
-      this.cancel = function(){
+      this.cancel = function() {
         self.modal.close();
       }
     };
 
-    ViewModel = function(){
-      this.member_structure = [
-          {
-            name: "Name",
-            field: "name"
-          },
-          {
-            name: "NfcId",
-            field: "id"
-          }
-        ];
+    ViewModel = function() {
+      this.member_structure = [{
+        name: "Name",
+        field: "name"
+      }, {
+        name: "NfcId",
+        field: "id"
+      }];
 
-      this.members = ko.observableArray([
-          {
-            name: "Aaaaa",
-            id: "39248734"
-          },
-          {
-            name: "Bbbbb",
-            id: "asdfaasf"
-          }
-        ]);
+      this.members = ko.observableArray([{
+        name: "Aaaaa",
+        id: "39248734"
+      }, {
+        name: "Bbbbb",
+        id: "asdfaasf"
+      }]);
 
       this.addMember = function() {
         wna.showModal({
