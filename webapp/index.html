@@ -104,10 +104,14 @@
   <script type='text/javascript' src='./static/js/ko.pager.js'></script>
   <script type='text/javascript' src='./static/js/sammy.js'></script>
   <script type='text/javascript' src="./static/js/coffee-script.js"></script>
+  <script type='text/javascript' src='./static/js/pouchdb-3.0.6.min.js'></script>
   <script type='text/javascript' src='./static/js/knockout-bootstrap-modal-dialog.js'></script>
 
   <script type="text/javascript">
   $(function() {
+    var db = new PouchDB('WebNfcAttendance');
+
+
     MemberViewModel = function() {
       var self = this;
       this.name = ko.observable("No Name");
@@ -132,13 +136,17 @@
         field: "id"
       }];
 
-      this.members = ko.observableArray([{
-        name: "Aaaaa",
-        id: "39248734"
-      }, {
-        name: "Bbbbb",
-        id: "asdfaasf"
-      }]);
+      this.members = ko.observableArray([]);
+      var members = this.members;
+
+      db.allDocs({
+        include_docs: true,
+        descending: true
+      }, function(err, doc) {
+        $.each(doc.rows, function(i, v) {
+          members.push(v.doc);
+        })
+      });
 
       this.addMember = function() {
         wna.showModal({
@@ -147,6 +155,14 @@
           context: this
         }).then(function(result) {
           this.members.push(result);
+          db.post(result, function(err, result) {
+            if (!err) {
+              console.log('Successfully posted a member.');
+            } else {
+              console.log('Error when add a member.');
+              console.log(err);
+            }
+          });
         })
       }.bind(this);
     }
