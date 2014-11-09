@@ -46,13 +46,22 @@
         <button type="button" class="btn btn-info" data-bind="click: addMember">Add</button>
         <table class="table">
           <thead>
-            <tr data-bind="foreach: member_structure">
+            <tr>
+              <!-- ko foreach: member_structure -->
               <td data-bind="text: name">NoName</td>
+              <!-- /ko -->
+              <td class="col-md-1"></td>
             </tr>
           </thead>
           <tbody data-bind="foreach: { data: members, as: 'member'}">
-            <tr data-bind="foreach: { data: $root.member_structure, as: 'structure'}">
+            <tr>
+              <!-- ko foreach: { data: $root.member_structure, as: 'structure'} -->
               <td data-bind="text: member[structure.field]">No input</td>
+              <!-- /ko -->
+              <td class="col-md-1 text-right">
+                <span data-bind="click: $parent.editMember" class="glyphicon glyphicon-pencil"></span>
+                <span data-bind="click: $parent.removeMember" class="glyphicon glyphicon-remove"></span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -111,23 +120,38 @@
   $(function() {
     var db = new PouchDB('WebNfcAttendance');
 
-
-    MemberViewModel = function() {
+    MemberViewModel = function(doc) {
+      if (typeof doc === 'undefined') {
+        doc = {
+          name: "No Name",
+          id: "No NfcId"
+        };
+      }
       var self = this;
-      this.name = ko.observable("No Name");
-      this.id = ko.observable("No NfcId");
-      this.add = function() {
-        self.modal.close({
+      this.name = ko.observable(doc.name);
+      this.id = ko.observable(doc.id);
+      this.dbobject = doc;
+
+      this.update = function() {
+        this.dbobject.name = this.name();
+        this.dbobject.id = this.id();
+      }
+      this.get = function() {
+        return {
           name: self.name(),
           id: self.id()
-        });
+        };
+      };
+      this.add = function() {
+        self.modal.close(self);
       };
       this.cancel = function() {
         self.modal.close();
-      }
+      };
     };
 
     ViewModel = function() {
+      var self = this;
       this.member_structure = [{
         name: "Name",
         field: "name"
@@ -144,7 +168,7 @@
         descending: true
       }, function(err, doc) {
         $.each(doc.rows, function(i, v) {
-          members.push(v.doc);
+          members.push(new MemberViewModel(v.doc));
         })
       });
 
@@ -154,9 +178,43 @@
           template: "EditMember",
           context: this
         }).then(function(result) {
-          this.members.push(result);
-          db.post(result, function(err, result) {
+          db.post(result.get(), function(err, result) {
             if (!err) {
+              db.get(result.id, function(err, doc) {
+                if (!err) {
+                  console.log('Successfully posted a member.');
+                  self.members.push(new MemberViewModel(doc));
+                } else {
+                  console.log('Error when add a member.');
+                  console.log(err);
+                }
+              })
+            } else {
+              console.log('Error when add a member.');
+              console.log(err);
+            }
+          });
+        })
+      }.bind(this);
+
+      this.editMember = function(member) {
+        wna.showModal({
+          viewModel: member,
+          template: "EditMember",
+          context: this
+        }).then(function(result) {
+          result.update();
+          db.put(result.dbobject, function(err, result) {
+            if (!err) {
+              db.get(result.id, function(err, doc) {
+                if (!err) {
+                  console.log('Successfully posted a member.');
+                  member.dbobject = doc;
+                } else {
+                  console.log('Error when add a member.');
+                  console.log(err);
+                }
+              });
               console.log('Successfully posted a member.');
             } else {
               console.log('Error when add a member.');
@@ -164,6 +222,11 @@
             }
           });
         })
+      }
+
+      this.removeMember = function(member) {
+        this.members.remove(member);
+        db.remove(member.dbobject);
       }.bind(this);
     }
 
