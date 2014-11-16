@@ -221,24 +221,24 @@
       };
 
       this.updateMemberRaw = function(member) {
-          member.update();
-          db.put(member.dbobject, function(err, member) {
-            if (!err) {
-              db.get(result.id, function(err, doc) {
-                if (!err) {
-                  console.log('Successfully posted a member.');
-                  member.dbobject = doc;
-                } else {
-                  console.log('Error when add a member.');
-                  console.log(err);
-                }
-              });
-              console.log('Successfully posted a member.');
-            } else {
-              console.log('Error when add a member.');
-              console.log(err);
-            }
-          });        
+        member.update();
+        db.put(member.dbobject, function(err, member) {
+          if (!err) {
+            db.get(result.id, function(err, doc) {
+              if (!err) {
+                console.log('Successfully posted a member.');
+                member.dbobject = doc;
+              } else {
+                console.log('Error when add a member.');
+                console.log(err);
+              }
+            });
+            console.log('Successfully posted a member.');
+          } else {
+            console.log('Error when add a member.');
+            console.log(err);
+          }
+        });
       }
 
       this.memberSubject = new Rx.Subject();
