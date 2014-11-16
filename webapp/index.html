@@ -107,6 +107,34 @@
     </div>
   </script>
 
+  <script type="text/html" id="ConfirmDelete">
+    <div class="modal fade" tabindex="-1" role="dialog" aria-labelledby="ConfirmDelete" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              <span aria-hidden="true">&times;</span>
+              <span class="sr-only">Close</span>
+            </button>
+            <h4 class="modal-title">Delete Member</h4>
+          </div>
+          <div class="modal-body">
+            <dl class="dl-horizontal">
+              <dt>Name:</dt>
+              <dd data-bind="text: name"></dd>
+              <dt>NfcId:</dt>
+              <dd data-bind="text: id"></dd>
+            </dl>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" data-bind="click: cancel">Cancel</button>
+            <button type="button" class="btn btn-primary" data-bind="click: add">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </script>
+
   <script type='text/javascript' src="./static/js/jquery-2.1.0.js"></script>
   <script type='text/javascript' src="./static/js/bootstrap.min.js"></script>
   <script type='text/javascript' src='./static/js/knockout-3.1.0.js'></script>
@@ -240,8 +268,14 @@
       }
 
       this.removeMember = function(member) {
-        this.members.remove(member);
-        db.remove(member.dbobject);
+        wna.showModal({
+          viewModel: member,
+          template: "ConfirmDelete",
+          context: this
+        }).then(function(result) {
+          this.members.remove(member);
+          db.remove(member.dbobject);
+        });
       }.bind(this);
     }
 
