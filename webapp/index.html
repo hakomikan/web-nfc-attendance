@@ -115,10 +115,19 @@
   <script type='text/javascript' src="./static/js/coffee-script.js"></script>
   <script type='text/javascript' src='./static/js/pouchdb-3.0.6.min.js'></script>
   <script type='text/javascript' src='./static/js/knockout-bootstrap-modal-dialog.js'></script>
+  <script type='text/javascript' src='./static/js/rx.all.js'></script>
 
   <script type="text/javascript">
   $(function() {
     var db = new PouchDB('WebNfcAttendance');
+
+    var addMemberSubject = new Rx.Subject();
+
+    addMemberSubject.subscribe(
+      function(x) {
+        console.log(x);
+      }
+    );
 
     MemberViewModel = function(doc) {
       if (typeof doc === 'undefined') {
@@ -172,39 +181,28 @@
         })
       });
 
-      this.addMember = function() {
-        wna.showModal({
-          viewModel: new MemberViewModel(),
-          template: "EditMember",
-          context: this
-        }).then(function(result) {
-          db.post(result.get(), function(err, result) {
-            if (!err) {
-              db.get(result.id, function(err, doc) {
-                if (!err) {
-                  console.log('Successfully posted a member.');
-                  self.members.push(new MemberViewModel(doc));
-                } else {
-                  console.log('Error when add a member.');
-                  console.log(err);
-                }
-              })
-            } else {
-              console.log('Error when add a member.');
-              console.log(err);
-            }
-          });
-        })
-      }.bind(this);
+      this.addMemberRaw = function(member) {
+        db.post(member.get(), function(err, member) {
+          if (!err) {
+            db.get(member.id, function(err, doc) {
+              if (!err) {
+                console.log('Successfully posted a member.');
+                self.members.push(new MemberViewModel(doc));
+              } else {
+                console.log('Error when add a member.');
+                console.log(err);
+              }
+            })
+          } else {
+            console.log('Error when add a member.');
+            console.log(err);
+          }
+        });
+      };
 
-      this.editMember = function(member) {
-        wna.showModal({
-          viewModel: member,
-          template: "EditMember",
-          context: this
-        }).then(function(result) {
-          result.update();
-          db.put(result.dbobject, function(err, result) {
+      this.updateMemberRaw = function(member) {
+          member.update();
+          db.put(member.dbobject, function(err, member) {
             if (!err) {
               db.get(result.id, function(err, doc) {
                 if (!err) {
@@ -220,7 +218,32 @@
               console.log('Error when add a member.');
               console.log(err);
             }
+          });        
+      }
+
+      this.memberSubject = new Rx.Subject();
+      this.addStream = this.memberSubject
+        .subscribe(function() {
+          wna.showModal({
+            viewModel: new MemberViewModel(),
+            template: "EditMember",
+            context: self
+          }).then(function(result) {
+            self.addMemberRaw(result);
           });
+        });
+
+      this.addMember = function() {
+        self.memberSubject.onNext();
+      };
+
+      this.editMember = function(member) {
+        wna.showModal({
+          viewModel: member,
+          template: "EditMember",
+          context: this
+        }).then(function(result) {
+          self.updateMemberRaw(result);
         })
       }
 
