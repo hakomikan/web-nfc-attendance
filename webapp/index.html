@@ -121,14 +121,6 @@
   $(function() {
     var db = new PouchDB('WebNfcAttendance');
 
-    var addMemberSubject = new Rx.Subject();
-
-    addMemberSubject.subscribe(
-      function(x) {
-        console.log(x);
-      }
-    );
-
     MemberViewModel = function(doc) {
       if (typeof doc === 'undefined') {
         doc = {
