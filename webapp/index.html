@@ -50,42 +50,29 @@
   </div>
 
   <!-- Page Template -->
-  <script type="text/html" id="page-attendance">
+  <script type="text/html" id="page-default-list">
     <div>
-      Attendance View
-    </div>
-  </script>
-
-  <script type="text/html" id="page-members">
-    <div>
-
-      <button type="button" class="btn btn-info" data-bind="click: addMember">Add</button>
+    <button type="button" class="btn btn-info" data-bind="click: add">Add <span data-bind="text: $root.schema.name"></span> </button>
       <table class="table">
         <thead>
           <tr>
-            <!-- ko foreach: member_structure -->
-            <td data-bind="text: name">NoName</td>
+            <!-- ko foreach: $root.schema.order -->
+            <td data-bind="text: $root.schema.properties[$data].name">NoName</td>
             <!-- /ko -->
             <td class="col-md-1"></td>
           </tr>
         </thead>
-        <tbody data-bind="foreach: { data: members, as: 'member'}">
+        <tbody data-bind="foreach: { data: entries, as: 'entry'}">
           <tr>
-            <!-- ko foreach: { data: $root.member_structure, as: 'structure'} -->
-            <td data-bind="text: member[structure.field]">No input</td>
+            <!-- ko foreach: $root.schema.order -->
+            <td data-bind="text: entry[$data]">No input</td>
             <!-- /ko -->
             <td class="col-md-1 text-right">
-              <span data-bind="click: $parent.editMember" class="glyphicon glyphicon-pencil"></span>
-              <span data-bind="click: $parent.removeMember" class="glyphicon glyphicon-remove"></span>
+              <span data-bind="click: $parent.edit" class="glyphicon glyphicon-pencil"></span>
+              <span data-bind="click: $parent.remove" class="glyphicon glyphicon-remove"></span>
             </td>
           </tr>
         </tbody>
-    </div>
-  </script>
-
-  <script type="text/html" id="page-events">
-    <div>
-      Events View
     </div>
   </script>
 
@@ -168,27 +155,54 @@
   $(function() {
     var db = new PouchDB('WebNfcAttendance');
 
-    MemberViewModel = function(doc) {
-      if (typeof doc === 'undefined') {
-        doc = {
-          name: "No Name",
-          id: "No NfcId"
-        };
+    var makeDict = function(iteratable, mapper) {
+      var ret = {}
+
+      if (mapper) {
+        console.log(iteratable);
+        $.each(iteratable, function(obj, obj2) {
+          mappedObj = mapper(obj, obj2);
+          ret[mappedObj.key] = mappedObj.value;
+        });
+      } else {
+        $.each(iteratable, function(obj) {
+          ret[obj.key] = obj.value;
+        });
       }
+
+      return ret;
+    }
+
+    JsonSchemaViewModel = function(schema, doc) {
       var self = this;
-      this.name = ko.observable(doc.name);
-      this.id = ko.observable(doc.id);
-      this.dbobject = doc;
+
+      if (typeof doc === 'undefined') {
+        var doc = makeDict(schema.properties, function(key, value) {
+          return {
+            "key": key,
+            "value": value.defaultValue
+          };
+        });
+      }
+      doc.type = schema.name;
+      self.dbobject = doc;
+
+      $.each(schema.properties, function(key, value) {
+        self[key] = ko.observable(doc[key]);
+      });
 
       this.update = function() {
-        this.dbobject.name = this.name();
-        this.dbobject.id = this.id();
+        $.each(schema.properties, function(key, value) {
+          self.dbobject[key] = self[key]();
+        });
       }
       this.get = function() {
-        return {
-          name: self.name(),
-          id: self.id()
-        };
+        return makeDict(schema.properties, function(key,value) {
+          return {
+            key: key,
+            value: self[key]()
+          }
+        });
       };
       this.add = function() {
         self.modal.close(self);
@@ -198,87 +212,80 @@
       };
     };
 
-    ViewModel = function() {
+    JsonSchemaListViewModel = function(schema) {
       var self = this;
-      this.member_structure = [{
-        name: "Name",
-        field: "name"
-      }, {
-        name: "NfcId",
-        field: "id"
-      }];
 
-      this.members = ko.observableArray([]);
-      var members = this.members;
+      self.schema = schema;
+      self.entries = ko.observableArray([]);
 
       db.allDocs({
         include_docs: true,
         descending: true
       }, function(err, doc) {
         $.each(doc.rows, function(i, v) {
-          members.push(new MemberViewModel(v.doc));
+          self.entries.push(new JsonSchemaViewModel(schema, v.doc));
         })
       });
 
-      this.addMemberRaw = function(member) {
-        db.post(member.get(), function(err, member) {
+      this.addRaw = function(entry) {
+        db.post(entry.get(), function(err, entry) {
           if (!err) {
-            db.get(member.id, function(err, doc) {
+            db.get(entry.id, function(err, doc) {
               if (!err) {
-                console.log('Successfully posted a member.');
-                self.members.push(new MemberViewModel(doc));
+                console.log('Successfully posted a entry.');
+                self.entries.push(new JsonSchemaViewModel(schema, doc));
               } else {
-                console.log('Error when add a member.');
+                console.log('Error when add a entry.');
                 console.log(err);
               }
             })
           } else {
-            console.log('Error when add a member.');
+            console.log('Error when add a entry.');
             console.log(err);
           }
         });
       };
 
-      this.updateMemberRaw = function(member) {
-        member.update();
-        db.put(member.dbobject, function(err, member) {
+      this.updateMemberRaw = function(entry) {
+        entry.update();
+        db.put(entry.dbobject, function(err, entry) {
           if (!err) {
             db.get(result.id, function(err, doc) {
               if (!err) {
-                console.log('Successfully posted a member.');
-                member.dbobject = doc;
+                console.log('Successfully posted a entry.');
+                entry.dbobject = doc;
               } else {
-                console.log('Error when add a member.');
+                console.log('Error when add a entry.');
                 console.log(err);
               }
             });
-            console.log('Successfully posted a member.');
+            console.log('Successfully posted a entry.');
           } else {
-            console.log('Error when add a member.');
+            console.log('Error when add a entry.');
             console.log(err);
           }
         });
       }
 
-      this.memberSubject = new Rx.Subject();
-      this.addStream = this.memberSubject
+      this.entrySubject = new Rx.Subject();
+      this.addStream = this.entrySubject
         .subscribe(function() {
           wna.showModal({
-            viewModel: new MemberViewModel(),
+            viewModel: new JsonSchemaViewModel(schema),
             template: "EditMember",
             context: self
           }).then(function(result) {
-            self.addMemberRaw(result);
+            self.addRaw(result);
           });
         });
 
-      this.addMember = function() {
-        self.memberSubject.onNext();
+      this.add = function() {
+        self.entrySubject.onNext();
       };
 
-      this.editMember = function(member) {
+      this.edit = function(entry) {
         wna.showModal({
-          viewModel: member,
+          viewModel: entry,
           template: "EditMember",
           context: this
         }).then(function(result) {
@@ -286,27 +293,109 @@
         })
       }
 
-      this.removeMember = function(member) {
+      this.remove = function(entry) {
         wna.showModal({
-          viewModel: member,
+          viewModel: entry,
           template: "ConfirmDelete",
-          context: this
+          context: self
         }).then(function(result) {
-          this.members.remove(member);
-          db.remove(member.dbobject);
+          self.entries.remove(entry);
+          db.remove(entry.dbobject);
         });
-      }.bind(this);
+      };
     }
 
     var renderTemplate = function(templateId, viewModel) {
-        ko.renderTemplate(
-          templateId,
-          viewModel, {
-            afterRender: function(nodes) {}
-          },
-          $("#main")[0]
-        );      
+      ko.renderTemplate(
+        templateId,
+        viewModel, {
+          afterRender: function(nodes) {}
+        },
+        $("#main")[0]
+      );
     }
+
+    var memberJsonSchema = {
+      name: "member",
+      type: "object",
+      description: "Member",
+      properties: {
+        name: {
+          name: "UserName",
+          type: "string",
+          defaultValue: "Default Name"
+        },
+        id: {
+          name: "NfcId",
+          type: "string",
+          defaultValue: "Defalut Id"
+        }
+      },
+      order: ["name", "id"]
+    };
+
+    var eventJsonSchema = {
+      name: "event",
+      type: "object",
+      description: "Event",
+      properties: {
+        date: {
+          name: "EventDate",
+          type: "DateTime",
+          defaultValue: null
+        },
+        name: {
+          name: "EventName",
+          type: "string",
+          defaultValue: "Default Name"
+        }
+      },
+      order: ["date", "name"]
+    };
+
+    var attendanceJsonSchema = {
+      name: "attendance",
+      type: "object",
+      description: "Attendance",
+      properties: {
+        date: {
+          name: "Date",
+          type: "DateTime",
+          defaultValue: null
+        },
+        place: {
+          name: "Place",
+          type: "string",
+          defaultValue: "Default Place"
+        },
+        userName: {
+          name: "UserName",
+          type: "string",
+          defaultValue: "Default Name"
+        },
+        enterTime: {
+          name: "EnterTime",
+          type: "DateTime",
+          defaultValue: null
+        },
+        exitTime: {
+          name: "ExitTime",
+          type: "DateTime",
+          defaultValue: null
+        },
+        state: {
+          name: "State",
+          type: "string",
+          defaultValue: "exist"
+        },
+        event: {
+          name: "EventName",
+          type: "string",
+          defaultValue: null
+        },
+      },
+      order: ["date", "place", "userName", "enterTime", "exitTime", "state", "event"]
+    };
 
     var app = $.sammy("#main", function() {
       this.debug = true;
@@ -314,13 +403,19 @@
         this.redirect("#/members/");
       });
       this.get("#/members/", function() {
-        renderTemplate("page-members", new ViewModel());
+        renderTemplate(
+          "page-default-list",
+          new JsonSchemaListViewModel(memberJsonSchema));
       });
       this.get("#/events/", function() {
-        renderTemplate("page-events", new ViewModel());
+        renderTemplate(
+          "page-default-list",
+          new JsonSchemaListViewModel(eventJsonSchema));
       });
       this.get("#/attendance/", function() {
-        renderTemplate("page-attendance", new ViewModel());
+        renderTemplate(
+          "page-default-list",
+          new JsonSchemaListViewModel(attendanceJsonSchema));
       });
     });
 
